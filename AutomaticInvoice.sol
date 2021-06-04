@@ -2,8 +2,8 @@
 /**
  * Functionalities:
  * 1. Each supermarket can have a list of shipments and corresponding invoices.
- * 2. A shipment is initialised with a status of INTRANSITION.
- * 3. An invoice is issued when a shipment's status gets updated to SHIPPED.
+ * 2. A shipment is initialised by a carrier with a status of INTRANSITION, and only the corresponding carrier can cancel or update status of a shipment.
+ * 3. An invoice is automatically issued from a carrier to a supermarket when a shipment's status gets updated to SHIPPED.
  * 4. Once the invoiced is issued, the status of the shipment gets updated to INVOICED.
  * 5. Corresponding events are emitted.
 **/
@@ -34,8 +34,15 @@ contract AutomaticInvoice {
         uint amountDue;
     }
     
+    struct Carrier {
+        uint id;
+        string name;
+        address addr;
+    }
+    
     struct Shipment {
         uint shipmentID;
+        uint carrierID;
         uint supermarketID;
         ShipmentStatus status;
     }
@@ -45,6 +52,9 @@ contract AutomaticInvoice {
     
     mapping (uint => Invoice) public invoices;
     uint public invoiceCount;
+    
+    mapping (uint => Carrier) public carriers;
+    uint public carrierCount;
     
     mapping (uint => Shipment) public shipments;
     uint public shipmentCount;
@@ -59,6 +69,11 @@ contract AutomaticInvoice {
         uint supermarketID,
         string name,
         address addr
+    );
+    
+    event CarrierAdded (
+        uint carrierID,
+        string name
     );
     
     event ShipmentAdded (
@@ -123,23 +138,30 @@ contract AutomaticInvoice {
         return (supermarkets[_supermarketID].name, supermarkets[_supermarketID].addr);
     }
     
-    function addShipments (uint _supermarketID) public {
+    function addCarriers (string memory _name) public {
+        carrierCount++;
+        carriers[carrierCount] = Carrier(carrierCount, _name, msg.sender);
+        
+        emit CarrierAdded(carrierCount, _name);
+    }
+    
+    function addShipments (uint _carrierID, uint _supermarketID) public {
         require(
-            msg.sender == admin,
-            "Only contract admin can add shipments."
+            msg.sender == carriers[_carrierID].addr,
+            "Only a valid carrier can add shipments."
         );
         
         shipmentCount++;
-        shipments[shipmentCount] = Shipment(shipmentCount, _supermarketID, ShipmentStatus.INTRANSIT);
+        shipments[shipmentCount] = Shipment(shipmentCount, _carrierID, _supermarketID, ShipmentStatus.INTRANSIT);
         
         emit ShipmentAdded(shipmentCount, _supermarketID, ShipmentStatus.INTRANSIT);
     }
     
     // cancels a shipment and change its status to CANCELED
-    function cancelShipmentStatus (uint _shipmentID) public {
+    function cancelShipment (uint _shipmentID) public {
         require(
-            msg.sender == admin,
-            "Only contract admin can update the status of shipments."
+            msg.sender == carriers[shipments[_shipmentID].carrierID].addr,
+            "Only the corresponding carrier cancel the shipments."
         );
         
         require(
@@ -156,8 +178,8 @@ contract AutomaticInvoice {
     // for shipments that are SHIPPED, create an invoice, and change shipment status to INVOICED
     function updateShipmentStatus (uint _shipmentID, uint256 _dateDue, uint _amountDue) public {
         require(
-            msg.sender == admin,
-            "Only contract admin can update the status of shipments."
+            msg.sender == carriers[shipments[_shipmentID].carrierID].addr,
+            "Only the corresponding carrier can update the status of shipments."
         );
         
         require(
@@ -188,8 +210,8 @@ contract AutomaticInvoice {
     // only called by the updateShipmentStatus function
     function createInvoice (uint _shipmentID, uint256 _dateDue, uint _amountDue) private {
         require(
-            msg.sender == admin,
-            "Only contract admin can send an invoice."
+            msg.sender == carriers[shipments[_shipmentID].carrierID].addr,
+            "Only the corresponding carrier can issue an invoice to a corresponding supermarket."
         );
         
         invoiceCount++;
