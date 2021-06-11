@@ -111,7 +111,7 @@ contract AutomaticPayment {
         emit NewInvestment(_amount);
     }
 
-    function getInvestmentCount() external view returns (uint count) {
+    function getInvestmentCount() external view returns (uint) {
         return investmentCount;
     }
 
@@ -124,7 +124,7 @@ contract AutomaticPayment {
             return (investments[_investmentID].investorAddr, investments[_investmentID].amount, investments[_investmentID].expectation);
     }
 
-    function contractBalance() external view returns (uint _balance){
+    function contractBalance() external view returns (uint){
         return address(this).balance;
     }
 
@@ -135,7 +135,7 @@ contract AutomaticPayment {
         emit FarmerAdded(farmerCount, _name, msg.sender, _location);
     }
 
-    function getFarmerCount() external view returns (uint count) {
+    function getFarmerCount() external view returns (uint) {
         return farmerCount;
     }
 
@@ -146,7 +146,7 @@ contract AutomaticPayment {
         emit MilkingAdded(milkingCount, _farmerID, 0, MilkingStatus.STARTED);
     }
 
-    function getMilkingCount() external view returns (uint count) {
+    function getMilkingCount() external view returns (uint) {
         return milkingCount;
     }
     
@@ -172,7 +172,7 @@ contract AutomaticPayment {
         emit MilkingUpdated(milkingCount, _farmerID, _quantity, MilkingStatus.STARTED);
     }
 
-    function getTotalMilk() external view returns (uint milk) {
+    function getTotalMilk() external view returns (uint) {
         return totalMilk;
     }
 
@@ -199,9 +199,9 @@ contract AutomaticPayment {
     
     function viewPayment(uint _milkingID) external view 
         returns (
-            uint farmerID,
-            uint quantity,
-            uint payAmount
+            uint,
+            uint,
+            uint
         ) 
     {
         require(
@@ -212,7 +212,7 @@ contract AutomaticPayment {
         return (payments[_milkingID].farmerID, payments[_milkingID].quantity, payments[_milkingID].payAmount);
     }
 
-    function getFarmerBalance(uint _farmerID) external view returns (uint _balance) {
+    function getFarmerBalance(uint _farmerID) external view returns (uint) {
         require(
             msg.sender == farmers[_farmerID].addr
         );
@@ -222,7 +222,8 @@ contract AutomaticPayment {
     
     // called by the contract owner after collecting a number of investments and some quantity of milk
     // returns the next investmentToSatisfy and totalMilk remaining 
-    function distributeMilk () public returns (uint _investmentToSatisfy, uint _totalMilk) {
+    // always distribute from the first investment
+    function distributeMilk () public returns (uint, uint) {
         require(
             msg.sender == admin
         );
@@ -240,7 +241,6 @@ contract AutomaticPayment {
         if (totalMilk > investments[investmentToSatisfy].expectation) {
             totalMilk = totalMilk - investments[investmentToSatisfy].expectation;
             investments[investmentToSatisfy].expectation = 0; // set to 0 as expectation is satisfied
-            delete investments[investmentToSatisfy]; // delete satisfied investment from mapping
             investmentToSatisfy++;
             
             distributeMilk(); // if there is remaning milk, process the next investment 
@@ -248,11 +248,10 @@ contract AutomaticPayment {
         } else if (totalMilk == investments[investmentToSatisfy].expectation) {
             totalMilk = 0;
             investments[investmentToSatisfy].expectation = 0;
-            delete investments[investmentToSatisfy];
             investmentToSatisfy++;
         } else {
-            totalMilk = 0;
             investments[investmentToSatisfy].expectation = investments[investmentToSatisfy].expectation - totalMilk;
+            totalMilk = 0;
         }
         
         return (investmentToSatisfy, totalMilk); //return the id of the next investmentToSatisfy
