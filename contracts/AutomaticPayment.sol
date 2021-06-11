@@ -223,7 +223,7 @@ contract AutomaticPayment {
     // called by the contract owner after collecting a number of investments and some quantity of milk
     // returns the next investmentToSatisfy and totalMilk remaining 
     // always distribute from the first investment
-    function distributeMilk () public returns (uint, uint) {
+    function distributeMilk () public {
         require(
             msg.sender == admin
         );
@@ -254,7 +254,7 @@ contract AutomaticPayment {
             totalMilk = 0;
         }
         
-        return (investmentToSatisfy, totalMilk); //return the id of the next investmentToSatisfy
+        // return investmentToSatisfy; //return the id of the next investmentToSatisfy
     }
 
 }
