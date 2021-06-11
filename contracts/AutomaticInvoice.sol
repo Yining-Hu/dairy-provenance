@@ -131,8 +131,8 @@ contract AutomaticInvoice {
     
     function viewSupermarket (uint _supermarketID) external view 
         returns (
-            string memory name,
-            address addr
+            string memory,
+            address
         )
     {
         return (supermarkets[_supermarketID].name, supermarkets[_supermarketID].addr);
@@ -200,8 +200,8 @@ contract AutomaticInvoice {
     
     function viewShipment (uint _shipmentID) external view
         returns (
-            uint supermarketID,
-            ShipmentStatus status
+            uint,
+            ShipmentStatus
         )
     {
         return (shipments[_shipmentID].supermarketID, shipments[_shipmentID].status);
@@ -222,8 +222,8 @@ contract AutomaticInvoice {
     
     function viewInvoice (uint _invoiceID) external view 
         returns (
-            uint256 dateDue,
-            uint amountDue
+            uint256,
+            uint
         )
     {
         require(
