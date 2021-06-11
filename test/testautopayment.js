@@ -75,7 +75,7 @@ contract('AutomaticPayment', (accounts) => {
         assert.equal(totalMilk, milk);
 
         // should fail
-        await truffleAssert.reverts(instance.updateMilkingByID(2, 3, 120, {from: accounts[6]}));
+        await truffleAssert.reverts(instance.updateMilkingByID(2, 3, milk2, {from: accounts[6]}));
     });
 
     // testing distributeMilk
@@ -88,8 +88,6 @@ contract('AutomaticPayment', (accounts) => {
         assert.equal(investment1[2], 0);
         assert.equal(investment2[2], 0);
         assert.equal(investment3[2], 60);
-        // assert.equal(result[1], 60);
-        // console.log(finalstatus[0]);
     });
 
 });
