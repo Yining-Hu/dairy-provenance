@@ -2,11 +2,17 @@ const _deploy_automaticpayment = require("../migrations/2_deploy_automaticpaymen
 const truffleAssert = require('truffle-assertions');
 
 var autoPayment = artifacts.require("AutomaticPayment");
+var farmToken = artifacts.require("FarmToken");
 
 contract('AutomaticPayment', (accounts) => {
-    var instance;
+    var tokenPrice = 1; // in wei
+
+    var instance; // represents the deployed AutomaticPayment.sol
+    var farmTokenInstance; // represents the deployed FarmToken.sol
+
     beforeEach('should setup the contract instance', async () => {
         instance = await autoPayment.deployed({from: accounts[0]});
+        farmTokenInstance = await farmToken.deployed({from: accounts[0]});
     });
 
     // testing constructor
@@ -14,6 +20,25 @@ contract('AutomaticPayment', (accounts) => {
         const value = await instance.admin.call();
 
         assert.equal(value, accounts[0]);
+    });
+
+    // testing buyTokens
+    it("should let users purchase Farm Tokens with Ethereum", async() => {
+        var tokensAvailable = 75000; // provision 75% of total supply to AutomaticPayment
+        var numOfTokens1 = 5000;
+        var numOfTokens2 = 10000;
+        var numOfTokens3 = 15000;
+        var numOfTokens = numOfTokens1 + numOfTokens2 + numOfTokens3;
+
+        await farmTokenInstance.transfer(instance.address, tokensAvailable, {from: accounts[0]});
+        await instance.buyTokens(numOfTokens1, {from: accounts[1], value: numOfTokens1 * tokenPrice});
+        await instance.buyTokens(numOfTokens2, {from: accounts[2], value: numOfTokens2 * tokenPrice});
+        await instance.buyTokens(numOfTokens3, {from: accounts[3], value: numOfTokens3 * tokenPrice});
+        const sold = await instance.tokenSold.call();
+        const userTokenBalance = await instance.getTokenBalance(accounts[1]);
+
+        assert.equal(sold, numOfTokens);
+        assert.equal(userTokenBalance, numOfTokens1);
     });
 
     // testing invest
@@ -70,7 +95,6 @@ contract('AutomaticPayment', (accounts) => {
         await instance.updateMilkingByID(2, 1, milk2, {from: accounts[4]});
         await instance.updateMilkingByID(3, 2, milk3, {from: accounts[5]});
         const totalMilk = await instance.getTotalMilk();
-        const farmerBalance = await instance.getFarmerBalance(1, {from: accounts[4]});
 
         assert.equal(totalMilk, milk);
 

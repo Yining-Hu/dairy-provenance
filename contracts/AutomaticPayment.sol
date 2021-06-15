@@ -15,9 +15,10 @@ import "./FarmToken.sol";
 contract AutomaticPayment {
     address public admin;
     FarmToken public tokenContract;
-    uint constant pricePerKilo = 100;
+    uint public tokenPrice; // in Wei
+    uint public tokenSold;
+    uint constant pricePerKilo = 100; // in token per kilo
     uint totalMilk;
-    uint tokenSold;
     uint investmentToSatisfy = 1; // default value; automatically updated after milk is distributed by calling the distributeMilk function
     
     enum MilkingStatus {
@@ -96,25 +97,41 @@ contract AutomaticPayment {
         uint milkingID
     );
 
-    constructor(FarmToken _tokenContract) public {
+    constructor(FarmToken _tokenContract, uint _tokenPrice) public {
         admin = msg.sender;
         tokenContract = _tokenContract;
+        tokenPrice = _tokenPrice;
+    }
+
+    function multiply(uint x, uint y) internal pure returns (uint z) {
+        require(y == 0 || (z = x * y) / y == x);
     }
 
     function buyTokens(uint _numOfTokens) public payable {
         require(
-            tokenContract.getBalance(admin) >= _numOfTokens
-            // require(tokenContract.balanceOf(this) >= _numberOfTokens);
+            msg.value == multiply(_numOfTokens, tokenPrice)
+        );
+
+        require(
+            // requires the token contract to hold more tokens than requested
+            tokenContract.balanceOf(address(this)) >= _numOfTokens
         );
 
         require(
             tokenContract.transfer(msg.sender, _numOfTokens)
         );
 
-        tokenSold += _numOfTokens;
+        tokenSold += _numOfTokens; // keep track of tokens that are sold
     }
+
+    function getTokenBalance(address _addr) external view returns(uint) {
+        return tokenContract.balanceOf(_addr);
+    }
+
+    // allow multiple investors to invest in token
+    function investFarmToken(uint _amount) external payable {}
     
-    // can be called by multiple investors
+    // allow multiple investors to invest in Ether/Wei
     function invest(uint _amount) external payable {
         require(
             msg.value == _amount
@@ -227,14 +244,6 @@ contract AutomaticPayment {
         );
         
         return (payments[_milkingID].farmerID, payments[_milkingID].quantity, payments[_milkingID].payAmount);
-    }
-
-    function getFarmerBalance(uint _farmerID) external view returns (uint) {
-        require(
-            msg.sender == farmers[_farmerID].addr
-        );
-
-        return farmers[_farmerID].addr.balance;
     }
     
     // called by the contract owner after collecting a number of investments and some quantity of milk
