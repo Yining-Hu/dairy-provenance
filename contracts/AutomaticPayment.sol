@@ -10,11 +10,14 @@
 
 pragma solidity >=0.4.22;
 
+import "./FarmToken.sol";
+
 contract AutomaticPayment {
     address public admin;
-    
+    FarmToken public tokenContract;
     uint constant pricePerKilo = 100;
     uint totalMilk;
+    uint tokenSold;
     uint investmentToSatisfy = 1; // default value; automatically updated after milk is distributed by calling the distributeMilk function
     
     enum MilkingStatus {
@@ -93,8 +96,22 @@ contract AutomaticPayment {
         uint milkingID
     );
 
-    constructor() public {
+    constructor(FarmToken _tokenContract) public {
         admin = msg.sender;
+        tokenContract = _tokenContract;
+    }
+
+    function buyTokens(uint _numOfTokens) public payable {
+        require(
+            tokenContract.getBalance(admin) >= _numOfTokens
+            // require(tokenContract.balanceOf(this) >= _numberOfTokens);
+        );
+
+        require(
+            tokenContract.transfer(msg.sender, _numOfTokens)
+        );
+
+        tokenSold += _numOfTokens;
     }
     
     // can be called by multiple investors
@@ -223,7 +240,7 @@ contract AutomaticPayment {
     // called by the contract owner after collecting a number of investments and some quantity of milk
     // returns the next investmentToSatisfy and totalMilk remaining 
     // always distribute from the first investment
-    function distributeMilk () public {
+    function distributeMilk () public returns(uint) {
         require(
             msg.sender == admin
         );
@@ -254,7 +271,7 @@ contract AutomaticPayment {
             totalMilk = 0;
         }
         
-        // return investmentToSatisfy; //return the id of the next investmentToSatisfy
+        return investmentToSatisfy; //return the id of the next investmentToSatisfy
     }
 
 }
