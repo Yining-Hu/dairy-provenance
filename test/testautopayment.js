@@ -79,9 +79,12 @@ contract('AutomaticPayment', (accounts) => {
     });
 
     // testing distributeMilk
-    it("should distiribute milk to investors in a first-come first-serve manner", async() => {
+    it("should distiribute milk to investors in a first-come first-served manner", async() => {
+        // testing return value
+        const result = await instance.distributeMilk.call({from: accounts[0]});
+        assert.equal(result, 3);
+        
         await instance.distributeMilk({from: accounts[0]});
-        // const result = await instance.distributeMilk({from: accounts[0]});
         const investment1 = await instance.getInvestment(1);
         const investment2 = await instance.getInvestment(2);
         const investment3 = await instance.getInvestment(3);
@@ -89,7 +92,6 @@ contract('AutomaticPayment', (accounts) => {
         assert.equal(investment1[2], 0);
         assert.equal(investment2[2], 0);
         assert.equal(investment3[2], 60);
-        // assert.equal(result[0], 3);
     });
 
 });
