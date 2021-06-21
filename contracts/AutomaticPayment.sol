@@ -5,7 +5,8 @@
  * 2. Each milking activity is a struct containing: id, farmer id, milking status.
  * 3. Milking status has 3 possible values: STARTED, COMPLETED, PAID; only COMPLETED milking activities can be paid and changed to PAID. Payment amount for milking activities is calculated by quantity * pricePerKilo.
  * 3. Multiple investors can deposit money to the smart contract. The totalMilk is distributed to investors based on amount of their investments. The investments are satisfied on a first-come, first-serve basis. Satisfied investments are removed from the storage.
- * 4. Corresponding events are emitted.
+ * 4. Farm token is used for investment and payment to farmers. An investor can purchase Farm tokens with Ethereum. Investors are allowed to withdraw.
+ * 5. Corresponding events are emitted.
 **/
 
 pragma solidity >=0.4.22;
@@ -107,43 +108,46 @@ contract AutomaticPayment {
         require(y == 0 || (z = x * y) / y == x);
     }
 
+    // buyTokens creates new investments in Farm tokens for the caller of the function
     function buyTokens(uint _numOfTokens) public payable {
         require(
             msg.value == multiply(_numOfTokens, tokenPrice)
         );
 
         require(
-            // requires the token contract to hold more tokens than requested
-            tokenContract.balanceOf(address(this)) >= _numOfTokens
-        );
-
-        require(
-            tokenContract.transfer(msg.sender, _numOfTokens)
+            // does not trigger the actual token transfer from this contract address to the investor
+            tokenContract.balanceOf(address(this)) >= _numOfTokens,
+            "Requires the token contract to hold more tokens than requested."
         );
 
         tokenSold += _numOfTokens; // keep track of tokens that are sold
+
+        // update investment details
+        investmentCount++;
+        investments[investmentCount].investorAddr = msg.sender;
+        investments[investmentCount].amount = _numOfTokens;
+        investments[investmentCount].expectation = _numOfTokens/pricePerKilo; // assuming all integer values
+
+        emit NewInvestment(_numOfTokens);
     }
 
     function getTokenBalance(address _addr) external view returns(uint) {
         return tokenContract.balanceOf(_addr);
     }
-
-    // allow multiple investors to invest in token
-    function investFarmToken(uint _amount) external payable {}
     
     // allow multiple investors to invest in Ether/Wei
-    function invest(uint _amount) external payable {
-        require(
-            msg.value == _amount
-        );
+    // function invest(uint _amount) external payable {
+    //     require(
+    //         msg.value == _amount
+    //     );
         
-        investmentCount++;
-        investments[investmentCount].investorAddr = msg.sender;
-        investments[investmentCount].amount = _amount;
-        investments[investmentCount].expectation = _amount/pricePerKilo; // assuming all integer values
+    //     investmentCount++;
+    //     investments[investmentCount].investorAddr = msg.sender;
+    //     investments[investmentCount].amount = _amount;
+    //     investments[investmentCount].expectation = _amount/pricePerKilo; // assuming all integer values
         
-        emit NewInvestment(_amount);
-    }
+    //     emit NewInvestment(_amount);
+    // }
 
     function getInvestmentCount() external view returns (uint) {
         return investmentCount;
@@ -156,6 +160,24 @@ contract AutomaticPayment {
             uint expectation
         ) {
             return (investments[_investmentID].investorAddr, investments[_investmentID].amount, investments[_investmentID].expectation);
+    }
+
+    // investors can choose to withdraw investments in Farm token 
+    function withdrawInvestment(uint _investmentID, uint _amount) public {
+        require(
+            investments[_investmentID].investorAddr == msg.sender
+        );
+
+        require(
+            investments[_investmentID].amount >= _amount
+        );
+
+        // withdrawal amount paid back to corresponding investor in Farm token
+        address payable investor = msg.sender;
+        tokenContract.transfer(investor, _amount);
+
+        // investment details updated
+        investments[_investmentID].amount -= _amount;
     }
 
     function contractBalance() external view returns (uint){
@@ -221,7 +243,8 @@ contract AutomaticPayment {
         address payable recipient = address(uint160(farmers[_farmerID].addr));
         uint amount = milking[_milkingID].quantity * pricePerKilo;
         
-        recipient.transfer(amount);
+        // recipient.transfer(amount);
+        tokenContract.transfer(recipient, amount);
         milking[_milkingID].status = MilkingStatus.PAID;
         
         payments[_farmerID].milkingID = _milkingID;
@@ -249,7 +272,7 @@ contract AutomaticPayment {
     // called by the contract owner after collecting a number of investments and some quantity of milk
     // returns the next investmentToSatisfy and totalMilk remaining 
     // always distribute from the first investment
-    function distributeMilk () public returns(uint) {
+    function distributeMilk() public returns(uint) {
         require(
             msg.sender == admin
         );
