@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: <SPDX-License>
+/**
+ * Defins Farm token for investing and paying farmers.
+**/
+
 pragma solidity >=0.4.22;
 
 contract FarmToken {
