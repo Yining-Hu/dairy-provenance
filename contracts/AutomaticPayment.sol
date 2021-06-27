@@ -117,7 +117,7 @@ contract AutomaticPayment {
         require(
             // does not trigger the actual token transfer from this contract address to the investor
             tokenContract.balanceOf(address(this)) >= _numOfTokens,
-            "Requires the token contract to hold more tokens than requested."
+            "Requires the deployed AutomaticPayment contract to hold more tokens than requested."
         );
 
         tokenSold += _numOfTokens; // keep track of tokens that are sold
@@ -174,6 +174,7 @@ contract AutomaticPayment {
 
         // withdrawal amount paid back to corresponding investor in Farm token
         address payable investor = msg.sender;
+        // address payable investor = payable(msg.sender); // for later solidity versions
         tokenContract.transfer(investor, _amount);
 
         // investment details updated
@@ -241,6 +242,7 @@ contract AutomaticPayment {
         );
         
         address payable recipient = address(uint160(farmers[_farmerID].addr));
+        // address payable recipient = payable(farmers[_farmerID].addr); // for later solidity versions
         uint amount = milking[_milkingID].quantity * pricePerKilo;
         
         // recipient.transfer(amount);

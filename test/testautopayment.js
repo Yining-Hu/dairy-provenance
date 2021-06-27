@@ -11,8 +11,8 @@ contract('AutomaticPayment', (accounts) => {
     var instance; // represents the deployed AutomaticPayment.sol
     var farmTokenInstance; // represents the deployed FarmToken.sol
 
-    // var farmTokenAdmin = accounts[0];
-    // var autoPaymentAdmin = accounts[1];
+    // var farmTokenAdmin = accounts[8];
+    // var adm = accounts[9];
     var adm = accounts[0];
     var investor1 = accounts[1];
     var investor2 = accounts[2];
@@ -44,6 +44,7 @@ contract('AutomaticPayment', (accounts) => {
         var numOfTokens3 = 15000;
         var numOfTokens = numOfTokens1 + numOfTokens2 + numOfTokens3;
 
+        // the call below allows farm tokens to be transferred from it's admin to AutomaticPayment contract
         await farmTokenInstance.transfer(instance.address, tokensAvailable, {from: adm});
         await instance.buyTokens(numOfTokens1, {from: investor1, value: numOfTokens1 * tokenPrice});
         await instance.buyTokens(numOfTokens2, {from: investor2, value: numOfTokens2 * tokenPrice});

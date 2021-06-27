@@ -9,6 +9,7 @@ contract FarmToken {
     string public name = 'Farm Token';
     string public symbol = 'FMTOKEN';
     string public standard = "Farm Token v1.0";
+    address public owner;
     uint public totalSupply;
 
     event Transfer(
@@ -20,7 +21,8 @@ contract FarmToken {
     mapping(address => uint) public balanceOf;
 
     constructor(uint _initialSupply) public {
-        balanceOf[msg.sender] = _initialSupply;
+        owner = msg.sender;
+        balanceOf[owner] = _initialSupply;
         totalSupply = _initialSupply;
     }
 
@@ -39,6 +41,10 @@ contract FarmToken {
 
     function getBalance(address _addr) public view returns(uint) {
         return balanceOf[_addr];
+    }
+
+    function getTotalSupply() public view returns(uint) {
+        return totalSupply;
     }
 
 }
