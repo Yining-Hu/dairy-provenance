@@ -115,6 +115,10 @@ contract AutomaticInvoice {
         
         emit SupermarketAdded(supermarketCount, _name, msg.sender);
     }
+
+    function countSupermarkets () external view returns (uint) {
+        return supermarketCount;
+    }
     
     // when users register themselves to the contract by mistake, the contract owner corrects supermarket details
     function updateSupermarketByID (uint _supermarketID, string memory _name, address _addr) public {
